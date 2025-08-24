@@ -9,6 +9,8 @@ const port = process.env.PORT || 3000;
 
 app.use(cors());
 
+let shortURLS = [];
+
 app.use('/public', express.static(`${process.cwd()}/public`));
 
 app.get('/', function(req, res) {
@@ -19,6 +21,8 @@ app.get('/', function(req, res) {
 app.get('/api/hello', function(req, res) {
   res.json({ greeting: 'hello API' });
 });
+
+app.use("/api/shorturl", bodyParser.urlencoded()); 
 
 function isValidUrl(urlString) {
   try {
@@ -31,8 +35,10 @@ function isValidUrl(urlString) {
 
 // Example usage in an Express route:
 app.post("/api/shorturl", (req, res) => {
+  
   const pageURL = req.body.url; // Assuming imageUrl is sent in the request body
-  console.log("pageURL", pageURL)
+  console.log("pageURL", pageURL);
+
   if (isValidUrl(pageURL)) {
     // URL is valid, proceed with processing
     res.json({ original_url: pageURL, short_url });
@@ -40,6 +46,7 @@ app.post("/api/shorturl", (req, res) => {
     // URL is invalid
     res.json({ error: "invalid url" });
   }
+  
 });
 
 //use the function dns.lookup(host, cb) from the dns core module to verify a submitted URL.

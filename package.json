@@ -9,10 +9,18 @@
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
-    "express": "^4.17.1"
+    "express": "^4.17.1",
+    "mongoose": "^8.18.0",
+    "body-parser": "^2.2.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hbar1st/boilerplate-project-urlshortener.git"
   },
   "license": "MIT",
-  "devDependencies": {
-    "body-parser": "^2.2.0"
-  }
+  "keywords": [
+    "node",
+    "mongoose",
+    "express"
+  ],
 }
