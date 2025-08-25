@@ -4,8 +4,7 @@ const dns = require("dns");
 const cors = require('cors');
 const bodyParser = require("body-parser");
 const mongoose = require('mongoose');
-// Importing Utilities module 
-const util = require('util')
+
 
 //the MONGO_URI is coming from the cluster on AtlasDB
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
@@ -28,22 +27,15 @@ let urlSchema = new mongoose.Schema({
 // the model that links between our schema and the collection in mongodb
 let URLRecord = mongoose.model("URLRecord", urlSchema);
 
-let shortURLS = [];
-
 app.use('/public', express.static(`${process.cwd()}/public`));
 
 app.get('/', function(req, res) {
   res.sendFile(process.cwd() + '/views/index.html');
 });
 
-// Your first API endpoint
-app.get('/api/hello', function(req, res) {
-  res.json({ greeting: 'hello API' });
-});
-
 app.use("/api/shorturl", bodyParser.urlencoded()); 
 
-
+//use the function dns.lookup(host, cb) from the dns core module to verify a submitted URL.
 function isValidUrl(url) {
   return new Promise((resolve, reject) => {
     try {
@@ -57,7 +49,7 @@ function isValidUrl(url) {
         if (err) {
           console.error(`DNS lookup failed for ${hostname}:`, err.message);
           // Handle invalid hostname (e.g., display error to user)
-          resolve(false); // Or throw an error
+          resolve(false); 
         } else {
           console.log(
             `Hostname ${hostname} resolved to IP: ${address} (IPv${family})`
@@ -95,7 +87,6 @@ app.post("/api/shorturl", async (req, res) => {
   });
 });
 
-//use the function dns.lookup(host, cb) from the dns core module to verify a submitted URL.
 app.get("/api/shorturl/:shorturl", async (req, res) => {
   console.log("request.params.shorturl in get: ", req.params.shorturl);
   const url = await findOneByShortUrl(req.params.shorturl);
