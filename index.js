@@ -36,7 +36,7 @@ app.get('/', function(req, res) {
 app.use("/api/shorturl", bodyParser.urlencoded()); 
 
 //use the function dns.lookup(host, cb) from the dns core module to verify a submitted URL.
-function isValidUrl(url) {
+async function isValidUrl(url) {
   return new Promise((resolve, reject) => {
     try {
       const urlObject = new URL(url);
@@ -71,20 +71,18 @@ app.post("/api/shorturl", async (req, res) => {
   
   const pageURL = req.body.url; // Assuming imageUrl is sent in the request body
   console.log("pageURL", pageURL);
-  isValidUrl(pageURL).then((valid) => {
-    console.log("result of isValidUrl:", valid);
-    if (valid) {
-      // URL is valid, proceed with processing
-      createAndSaveURLRecord(pageURL).then((shorturl) => {
-        console.log("shorturl -> ", shorturl);
-        res.json({ original_url: pageURL, short_url: shorturl });
-      });
+  const valid = await isValidUrl(pageURL)
+  console.log("result of isValidUrl:", valid);
+  if (valid) {
+    // URL is valid, proceed with processing
+    const shorturl = await createAndSaveURLRecord(pageURL)
+    console.log("shorturl -> ", shorturl);
+    res.json({ original_url: pageURL, short_url: shorturl });
       
-    } else {
-      // URL is invalid
-      res.json({ error: "invalid url" });
-    }
-  });
+  } else {
+    // URL is invalid
+    res.json({ error: "invalid url" });
+  }
 });
 
 app.get("/api/shorturl/:shorturl", async (req, res) => {
