@@ -4,6 +4,8 @@ const dns = require("dns");
 const cors = require('cors');
 const bodyParser = require("body-parser");
 const mongoose = require('mongoose');
+// Importing Utilities module 
+const util = require('util')
 
 //the MONGO_URI is coming from the cluster on AtlasDB
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
@@ -41,14 +43,35 @@ app.get('/api/hello', function(req, res) {
 
 app.use("/api/shorturl", bodyParser.urlencoded()); 
 
-function isValidUrl(urlString) {
-  try {
-    const urlString = new URL(urlString);
-    console.log("seems to be valid: ", urlString);
-    return true;
-  } catch (error) {
-    return false;
-  }
+
+function isValidUrl(url) {
+  return new Promise((resolve, reject) => {
+    try {
+      const urlObject = new URL(url);
+      const hostname = urlObject.hostname;
+      
+      console.log("hostname: ", hostname);
+      // Perform DNS lookup
+      dns.lookup(hostname, (err, address, family) => {
+        console.log("in the callback of dns.lookup");
+        if (err) {
+          console.error(`DNS lookup failed for ${hostname}:`, err.message);
+          // Handle invalid hostname (e.g., display error to user)
+          resolve(false); // Or throw an error
+        } else {
+          console.log(
+            `Hostname ${hostname} resolved to IP: ${address} (IPv${family})`
+          );
+          // Hostname is resolvable
+          resolve(true);
+        }
+      });
+    } catch (error) {
+      console.error("Invalid URL format:", error.message);
+      // Handle invalid URL format (e.g., missing protocol)
+      resolve(false);
+    }
+  });
 }
 
 // Example usage in an Express route:
@@ -56,17 +79,20 @@ app.post("/api/shorturl", async (req, res) => {
   
   const pageURL = req.body.url; // Assuming imageUrl is sent in the request body
   console.log("pageURL", pageURL);
-
-  if (isValidUrl(pageURL)) {
-    // URL is valid, proceed with processing
-    let shorturl = await createAndSaveURLRecord(pageURL);
-    console.log("shorturl -> ", shorturl);
-    res.json({ original_url: pageURL, short_url: shorturl });
-  } else {
-    // URL is invalid
-    res.json({ error: "invalid url" });
-  }
-  
+  isValidUrl(pageURL).then((valid) => {
+    console.log("result of isValidUrl:", valid);
+    if (valid) {
+      // URL is valid, proceed with processing
+      createAndSaveURLRecord(pageURL).then((shorturl) => {
+        console.log("shorturl -> ", shorturl);
+        res.json({ original_url: pageURL, short_url: shorturl });
+      });
+      
+    } else {
+      // URL is invalid
+      res.json({ error: "invalid url" });
+    }
+  });
 });
 
 //use the function dns.lookup(host, cb) from the dns core module to verify a submitted URL.
@@ -87,7 +113,7 @@ app.listen(port, function() {
 
 const createAndSaveURLRecord = async (url) => {
   let shorturl = 0;
-
+  
   const count = await URLRecord.countDocuments();
   if (count === 0) {
     shorturl = 1;
@@ -104,14 +130,14 @@ const createAndSaveURLRecord = async (url) => {
     ]);
     shorturl = result[0]["maxValue"] + 1 ;
   }
-
-
+  
+  
   // when we want to create new document, we instantiate the model (URLRecord)
   let urlRecord = new URLRecord({
     url,
     shorturl,
   });
-
+  
   // then we can save the new instance of Person to the database
   const doc = await urlRecord.save();
   return doc.shorturl;
