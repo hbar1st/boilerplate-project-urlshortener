@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const dns = require("dns");
 const cors = require('cors');
 const bodyParser = require("body-parser");
 const mongoose = require('mongoose');
@@ -42,7 +43,8 @@ app.use("/api/shorturl", bodyParser.urlencoded());
 
 function isValidUrl(urlString) {
   try {
-    new URL(urlString);
+    const urlString = new URL(urlString);
+    console.log("seems to be valid: ", urlString);
     return true;
   } catch (error) {
     return false;
